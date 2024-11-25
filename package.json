@@ -1,0 +1,16 @@
+{
+  "name": "backrooms-ai-game",
+  "version": "1.0.0",
+  "dependencies": {
+    "three": "^0.140.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "next": "^13.0.0",
+    "openai": "^3.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }
+}
