@@ -1,30 +1,53 @@
 // pages/api/generateEvent.js
-import { Configuration, OpenAIApi } from "openai";
+import { Configuration, OpenAIApi } from 'openai';
+import { generateRandomSound } from '../../utils/soundGenerator';
 import generateRoom from '../../utils/roomGenerator';
+import { generateTexture } from '../../utils/modelGenerator';
 
 const configuration = new Configuration({
-  apiKey: process.env.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, // Your OpenAI API Key
+  apiKey: process.env.OPENAI_API_KEY, // OpenAI API Key for text generation
 });
-
 const openai = new OpenAIApi(configuration);
+
+async function generateTexture(description) {
+  const response = await fetch('https://api.deepai.org/api/text2img', {
+    method: 'POST',
+    headers: {
+      'Api-Key': process.env.DEEPAI_API_KEY, // DeepAI API Key for image generation
+    },
+    body: JSON.stringify({ text: description }),
+  });
+
+  const data = await response.json();
+  return data.output_url; // Returning the generated texture URL
+}
 
 export default async function handler(req, res) {
   const { situation } = req.body;
 
   try {
-    // Generate procedural room
+    // Generate procedural room layout
     const room = generateRoom();
 
-    // Generate monster description and event
-    const prompt = `Generate a terrifying event and monster in the following environment: ${JSON.stringify(room)}. The event should be sudden, terrifying, and unique. Include an AI-generated monster description that the player could encounter.`;
+    // Generate AI-based textures for room
+    const wallTexture = await generateTexture("dark, decaying wall texture");
+    const floorTexture = await generateTexture("gritty, grimy floor texture");
+
+    // Generate monster and event
+    const prompt = `Generate a terrifying event in the following environment: ${JSON.stringify(room)}. Include a monster description and event details.`;
     const response = await openai.createCompletion({
-      model: "text-davinci-003",
+      model: 'text-davinci-003',
       prompt,
       max_tokens: 150,
     });
 
     const event = response.data.choices[0].text.trim();
-    res.status(200).json({ room, event });
+
+    // Determine if the event requires an object or ambient sound
+    const soundType = event.includes('monster') ? 'object' : 'ambient';
+    const sound = generateRandomSound(soundType);
+
+    res.status(200).json({ room, event, wallTexture, floorTexture, sound });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
